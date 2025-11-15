@@ -16,6 +16,7 @@ struct InventoryItemCardView: View {
         VStack(alignment: .leading, spacing: 8) {
             Text(item.name)
                 .font(.headline)
+                .multilineTextAlignment(.leading)
                 .lineLimit(2)
             
             Text("Qty: \(item.quantity)")
@@ -40,7 +41,7 @@ struct InventoryItemCardView: View {
 
 #Preview {
     InventoryItemCardView(
-        item: InventoryItem(id: 1, name: "Boxes", quantity: 17, location: "Bay 4")
+        item: InventoryItem(name: "Apple Magic Keyboard", quantity: 17, location: "Bay 4")
     )
     .padding()
     .background(Color(.systemGray))

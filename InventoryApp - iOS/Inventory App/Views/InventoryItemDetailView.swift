@@ -32,7 +32,7 @@ struct InventoryItemDetailView: View {
 #Preview {
     NavigationStack {
         InventoryItemDetailView(
-            item: InventoryItem(id: 1, name: "Boxes", quantity: 17, location: "Bay 4")
+            item: InventoryItem(name: "Boxes", quantity: 17, location: "Bay 4")
         )
     }
 }

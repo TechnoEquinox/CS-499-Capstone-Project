@@ -8,7 +8,7 @@
 import Foundation
 
 struct InventoryItem: Identifiable, Hashable {
-    let id: Int
+    let id: UUID = UUID()
     var name: String
     var quantity: Int
     var location: String
