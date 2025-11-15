@@ -1,0 +1,30 @@
+##############
+# macOS files
+##############
+.DS_Store
+.AppleDouble
+.LSOverride
+.Spotlight-V100
+.Trashes
+
+##############
+# Xcode
+##############
+
+# Xcode user settings
+xcuserdata/
+*.xcscmblueprint
+*.xccheckout
+
+# Xcode workspace-specific settings
+*.xcuserstate
+
+# Swift Package Manager local workspace data
+.swiftpm/xcode/package.xcworkspace/contents.xcworkspacedata
+
+##############
+# Swift Package Manager
+##############
+.swiftpm/
+.build/
+
