@@ -12,13 +12,16 @@ struct AddItemView: View {
     
     @State private var name: String = ""
     @State private var quantity: String = ""
+    @State private var maxQuantity: String = ""
     @State private var location: String = ""
     
-    let onSave: (String, Int, String) -> Void
+    let onSave: (String, Int, Int, String) -> Void
     
     private var canSave: Bool {
         guard !name.trimmingCharacters(in: .whitespaces).isEmpty else { return false }
         guard Int(quantity.trimmingCharacters(in: .whitespaces)) != nil else { return false }
+        guard Int(maxQuantity.trimmingCharacters(in: .whitespaces)) != nil else { return false }
+        
         return true
     }
     
@@ -26,24 +29,36 @@ struct AddItemView: View {
         let trimmedName = name.trimmingCharacters(in: .whitespacesAndNewlines)
         let trimmedLocation = location.trimmingCharacters(in: .whitespacesAndNewlines)
         let qtyInt = Int(quantity.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
+        let maxQtyInt = Int(maxQuantity.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
         
-        onSave(trimmedName, qtyInt, trimmedLocation)
+        onSave(trimmedName, qtyInt, maxQtyInt, trimmedLocation)
         dismiss()
     }
     
     var body: some View {
         NavigationStack {
-            Form {
-                Section(header: Text("Item Details")) {
-                    TextField("Name", text: $name)
-                    
-                    TextField("Quantity", text: $quantity)
-                        .keyboardType(.numberPad)
-                    
-                    TextField("Location", text: $location)
+            ZStack {
+                Color(.systemGray)
+                    .ignoresSafeArea()
+                
+                Form {
+                    Section(header: Text("Item Details")) {
+                        TextField("Name", text: $name)
+                        
+                        TextField("Quantity", text: $quantity)
+                            .keyboardType(.numberPad)
+                        
+                        TextField("Max Quantity", text: $maxQuantity)
+                            .keyboardType(.numberPad)
+                        
+                        TextField("Location", text: $location)
+                    }
                 }
+                .navigationTitle("Add Item")
+                .scrollContentBackground(.hidden)
+                .background(Color.clear)
             }
-            .navigationTitle("Add Item")
+            
             .toolbar {
                 ToolbarItem(placement: .cancellationAction) {
                     Button("Cancel") {
@@ -62,5 +77,5 @@ struct AddItemView: View {
 }
 
 #Preview {
-    AddItemView { _, _, _ in }
+    AddItemView { _, _, _, _ in }
 }

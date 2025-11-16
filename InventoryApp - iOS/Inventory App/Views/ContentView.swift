@@ -15,7 +15,8 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                Color(.systemBackground)
+                // Full screen gray
+                Color(.systemGray)
                     .ignoresSafeArea()
                 
                 VStack(spacing: 24) {
