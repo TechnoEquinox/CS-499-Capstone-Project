@@ -11,6 +11,11 @@ struct InventoryItemDetailView: View {
     let item: InventoryItem
     var onSave: ((InventoryItem) -> Void)?
     
+    @EnvironmentObject var notificationSettings: NotificationSettingsViewModel
+    
+    // Hard coded threshold for Low Stock notifications
+    private let lowStockThreshold: Double = 0.2
+    
     @State private var isEditing: Bool = false
     @State private var editedName: String
     @State private var editedQuantity: String
@@ -38,7 +43,25 @@ struct InventoryItemDetailView: View {
         editedQuantity = String(newQuantity)
         editedMaxQuantity = String(newMaxQuantity)
         
-        let updatedItem = InventoryItem(name: editedName, quantity: newQuantity, maxQuantity: newMaxQuantity, location: editedLocation, symbolName: selectedSymbolName)
+        // let updatedItem = InventoryItem(name: editedName, quantity: newQuantity, maxQuantity: newMaxQuantity, location: editedLocation, symbolName: selectedSymbolName)
+        
+        // Calculate the old and new percent remaining
+        // Protect against divide by zero
+        let oldPercentRemaining = Double(item.quantity) / Double(max(item.maxQuantity, 1))
+        let newPercentRemaining = Double(newQuantity) / Double(max(newMaxQuantity, 1))
+        
+        if oldPercentRemaining >= lowStockThreshold, newPercentRemaining < lowStockThreshold {
+            let percentRemainingInt = Int(newPercentRemaining * 100)
+            notificationSettings.sendLowStockNotification(itemName: editedName, itemLocation: editedLocation, percentRemaining: percentRemainingInt)
+        }
+        
+        let updatedItem = InventoryItem(
+            name: editedName,
+            quantity: newQuantity,
+            maxQuantity: newMaxQuantity,
+            location: editedLocation,
+            symbolName: selectedSymbolName
+        )
         
         onSave?(updatedItem)
         isEditing = false
@@ -155,5 +178,6 @@ struct InventoryItemDetailView: View {
         InventoryItemDetailView(
             item: InventoryItem(name: "Boxes", quantity: 17, maxQuantity: 30, location: "Bay 4")
         )
+        .environmentObject(NotificationSettingsViewModel())
     }
 }
