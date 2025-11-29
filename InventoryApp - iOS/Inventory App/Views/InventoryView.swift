@@ -9,6 +9,7 @@ import SwiftUI
 
 struct InventoryView: View {
     @StateObject private var viewModel = InventoryViewModel()
+    @EnvironmentObject private var notificationViewModel: NotificationSettingsViewModel
     
     @State private var showingAddItem = false
     @State private var itemToDelete: InventoryItem?
@@ -47,6 +48,19 @@ struct InventoryView: View {
             .map { $0.location.trimmingCharacters(in: .whitespacesAndNewlines) }
             .filter { !$0.isEmpty }
         return Array(Set(locations)).sorted()
+    }
+    
+    // Counts the number of unread notifications
+    private var notificationCount: Int {
+        notificationViewModel.notifications.filter { $0.isRead == false }.count
+    }
+    
+    private var notificationBadgeText: String {
+        if notificationCount > 8 {
+            return "9+"
+        } else {
+            return "\(notificationCount)"
+        }
     }
 
     private var filteredItems: [InventoryItem] {
@@ -136,7 +150,21 @@ struct InventoryView: View {
                     NavigationLink {
                         NotificationsView()
                     } label: {
-                        Image(systemName: "bell")
+                        ZStack(alignment: .topTrailing) {
+                            Image(systemName: "bell")
+                            
+                            if notificationViewModel.isNotificationsEnabled && notificationCount > 0 {
+                                Text(notificationBadgeText)
+                                    .font(.caption2).bold()
+                                    .foregroundColor(.white)
+                                    .padding(4)
+                                    .background(
+                                        Circle()
+                                            .fill(Color.red)
+                                    )
+                                    .offset(x: 6, y: -6)
+                            }
+                        }
                     }
                     
                     Menu {
@@ -208,4 +236,5 @@ struct InventoryView: View {
 
 #Preview {
     InventoryView()
+        .environmentObject(NotificationSettingsViewModel())
 }
