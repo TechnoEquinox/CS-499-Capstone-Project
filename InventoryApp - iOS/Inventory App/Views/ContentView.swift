@@ -11,6 +11,34 @@ struct ContentView: View {
     @State private var username: String = ""
     @State private var password: String = ""
     @State private var loginSuccess: Bool = false
+    @State private var isCheckingServer: Bool = false
+    @State private var connectionErrorMessage: String? = nil
+    
+    // Make a GET request to the /ping end-point to check for connectivity
+    private func testConnectionAndNavigate() {
+        // Reset state and show loading
+        isCheckingServer = true
+        connectionErrorMessage = nil
+        
+        Task {
+            do {
+                let ok = try await InventoryAPIClient.shared.ping()
+                await MainActor.run {
+                    isCheckingServer = false
+                    if ok {
+                        loginSuccess = true
+                    } else {
+                        connectionErrorMessage = "Unable to verify the server connection. Please try again."
+                    }
+                }
+            } catch {
+                await MainActor.run {
+                    isCheckingServer = false
+                    connectionErrorMessage = "Unable to reach server: \(error.localizedDescription)"
+                }
+            }
+        }
+    }
     
     var body: some View {
         NavigationStack {
@@ -62,21 +90,33 @@ struct ContentView: View {
                         // Button row
                         HStack {
                             Button("Create Account") {
-                                // TODO: Create new account view to handle new accounts
-                                // For now, just bypass login
-                                loginSuccess = true
+                                testConnectionAndNavigate()
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
                             .buttonStyle(.bordered)
+                            .disabled(isCheckingServer)
                             
                             Button("Log In") {
-                                // TODO: Validate user login against our users table in our db
-                                loginSuccess = true
+                                testConnectionAndNavigate()
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
                             .buttonStyle(.borderedProminent)
+                            .disabled(isCheckingServer)
+                        }
+                        
+                        if isCheckingServer {
+                            ProgressView("Checking server connection...")
+                                .font(.footnote)
+                        }
+                        
+                        if let message = connectionErrorMessage {
+                            Text(message)
+                                .font(.footnote)
+                                .foregroundStyle(.red)
+                                .multilineTextAlignment(.center)
+                                .padding(.top, 4)
                         }
                     }
                     .padding(16)
