@@ -12,6 +12,7 @@ struct InventoryItemDetailView: View {
     var onSave: ((InventoryItem) -> Void)?
     
     @EnvironmentObject var notificationSettings: NotificationSettingsViewModel
+    @EnvironmentObject var viewModel: InventoryViewModel
     
     // Hard coded threshold for Low Stock notifications
     private let lowStockThreshold: Double = 0.2
@@ -43,8 +44,6 @@ struct InventoryItemDetailView: View {
         editedQuantity = String(newQuantity)
         editedMaxQuantity = String(newMaxQuantity)
         
-        // let updatedItem = InventoryItem(name: editedName, quantity: newQuantity, maxQuantity: newMaxQuantity, location: editedLocation, symbolName: selectedSymbolName)
-        
         // Calculate the old and new percent remaining
         // Protect against divide by zero
         let oldPercentRemaining = Double(item.quantity) / Double(max(item.maxQuantity, 1))
@@ -55,14 +54,16 @@ struct InventoryItemDetailView: View {
             notificationSettings.sendLowStockNotification(itemName: editedName, itemLocation: editedLocation, percentRemaining: percentRemainingInt)
         }
         
-        let updatedItem = InventoryItem(
-            name: editedName,
-            quantity: newQuantity,
-            maxQuantity: newMaxQuantity,
-            location: editedLocation,
-            symbolName: selectedSymbolName
-        )
+        // Update the item like this to preserve the UUID
+        var updatedItem = item
+        updatedItem.name = editedName
+        updatedItem.quantity = newQuantity
+        updatedItem.maxQuantity = newMaxQuantity
+        updatedItem.location = editedLocation
+        updatedItem.symbolName = selectedSymbolName
         
+        // Persist changes via the shared view model
+        viewModel.updateItem(updatedItem, originalItem: item)
         onSave?(updatedItem)
         isEditing = false
     }
@@ -179,5 +180,6 @@ struct InventoryItemDetailView: View {
             item: InventoryItem(name: "Boxes", quantity: 17, maxQuantity: 30, location: "Bay 4")
         )
         .environmentObject(NotificationSettingsViewModel())
+        .environmentObject(InventoryViewModel())
     }
 }

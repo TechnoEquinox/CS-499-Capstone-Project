@@ -9,13 +9,12 @@ import SwiftUI
 
 struct AddItemView: View {
     @Environment(\.dismiss) private var dismiss
+    @EnvironmentObject var viewModel: InventoryViewModel
     
     @State private var name: String = ""
     @State private var quantity: String = ""
     @State private var maxQuantity: String = ""
     @State private var location: String = ""
-    
-    let onSave: (String, Int, Int, String) -> Void
     
     private var canSave: Bool {
         guard !name.trimmingCharacters(in: .whitespaces).isEmpty else { return false }
@@ -31,7 +30,7 @@ struct AddItemView: View {
         let qtyInt = Int(quantity.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
         let maxQtyInt = Int(maxQuantity.trimmingCharacters(in: .whitespacesAndNewlines)) ?? 0
         
-        onSave(trimmedName, qtyInt, maxQtyInt, trimmedLocation)
+        viewModel.addItem(name: trimmedName, quantity: qtyInt, maxQuantity: maxQtyInt, location: trimmedLocation)
         dismiss()
     }
     
@@ -77,5 +76,6 @@ struct AddItemView: View {
 }
 
 #Preview {
-    AddItemView { _, _, _, _ in }
+    AddItemView()
+        .environmentObject(InventoryViewModel())
 }

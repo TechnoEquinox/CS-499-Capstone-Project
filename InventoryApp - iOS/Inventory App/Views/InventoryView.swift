@@ -35,9 +35,15 @@ struct InventoryView: View {
     }
     
     private func deleteSelectedItems() {
-        viewModel.items.removeAll { item in
-            selectedItemIDs.contains(item.id)
+        // Collect the items that are currently selected
+        let itemsToDelete = viewModel.items.filter { selectedItemIDs.contains($0.id) }
+        
+        // Ask the view model to delete each item (which will also update the database)
+        for item in itemsToDelete {
+            viewModel.deleteItem(item)
         }
+        
+        // Clear selection state and exit editing mode
         selectedItemIDs.removeAll()
         isEditing = false
     }
@@ -118,11 +124,8 @@ struct InventoryView: View {
                                     .buttonStyle(.plain)
                                 } else {
                                     NavigationLink {
-                                        InventoryItemDetailView(item: item) { updatedItem in
-                                            if let index = viewModel.items.firstIndex(where: { $0.id == item.id }) {
-                                                viewModel.items[index] = updatedItem
-                                            }
-                                        }
+                                        InventoryItemDetailView(item: item)
+                                            .environmentObject(viewModel)
                                     } label: {
                                         InventoryItemCardView(item: item)
                                     }
@@ -131,6 +134,31 @@ struct InventoryView: View {
                         }
                     }
                     .padding()
+                }
+                .task {
+                    // Call refreshFromServer, as this just abstracts getAllItems()
+                    await viewModel.refreshFromServer()
+                }
+                .refreshable {
+                    // Allow the user to refresh this view with new data
+                    await viewModel.refreshFromServer()
+                }
+                .alert(
+                    "Error",
+                    isPresented: Binding(
+                        get: { viewModel.errorMessage != nil },
+                        set: { newValue in
+                            if !newValue {
+                                viewModel.errorMessage = nil
+                            }
+                        }
+                    )
+                ) {
+                    Button("OK", role: .cancel) {
+                        viewModel.errorMessage = nil
+                    }
+                } message: {
+                    Text(viewModel.errorMessage ?? "Unknown error")
                 }
             }
             // Toolbar at the top of the page
@@ -217,9 +245,8 @@ struct InventoryView: View {
             }
             // Present the AddItemView as a sheet
             .sheet(isPresented: $showingAddItem) {
-                AddItemView { name, quantity, maxQuantity, location in
-                    viewModel.addItem(name: name, quantity: quantity, maxQuantity: maxQuantity, location: location)
-                }
+                AddItemView()
+                    .environmentObject(viewModel)
             }
             // Present an alert to the user before deleting
             .alert("Delete selected items?", isPresented: $showingBatchDeleteAlert) {

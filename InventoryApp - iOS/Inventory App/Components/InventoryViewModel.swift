@@ -12,45 +12,90 @@ internal import Combine
 @MainActor
 class InventoryViewModel: ObservableObject {
     @Published var items: [InventoryItem] = []
+    @Published var isLoading: Bool = false
+    @Published var errorMessage: String?
     
-    init() {
-        seedIfEmpty()
+    init() {}
+    
+    func loadItems() async {
+        await MainActor.run {
+            isLoading = true
+            errorMessage = nil
+        }
+        
+        do {
+            let loaded = try await InventoryAPIClient.shared.getAllItems()
+            await MainActor.run {
+                self.items = loaded
+                self.isLoading = false
+            }
+        } catch {
+            await MainActor.run {
+                self.errorMessage = "Failed to load items: \(error.localizedDescription)"
+                self.isLoading = false
+            }
+        }
     }
     
-    // TODO: Remove this function once the database is setup
-    private func seedIfEmpty() {
-        // Check if items is empty, return if it is not
-        guard items.isEmpty else { return }
-        
-        let seeded: [InventoryItem] = [
-            InventoryItem(name: "Boxes", quantity: 95, maxQuantity: 100, location: "Bay 4", symbolName: "shippingbox"),
-            InventoryItem(name: "Tape", quantity: 29, maxQuantity: 100, location: "Bay 4", symbolName: "wrench"),
-            InventoryItem(name: "Nails", quantity: 403, maxQuantity: 1000, location: "Bay 4", symbolName: "wrench"),
-            InventoryItem(name: "Paper Cups", quantity: 51, maxQuantity: 200, location: "Bay 4", symbolName: "questionmark"),
-            InventoryItem(name: "Apple Magic Keyboard", quantity: 6, maxQuantity: 50, location: "Bay 2", symbolName: "keyboard"),
-            InventoryItem(name: "Apple Magic Trackpad", quantity: 7, maxQuantity: 50, location: "Bay 2", symbolName: "computermouse"),
-            InventoryItem(name: "Apple Magic Mouse", quantity: 6, maxQuantity: 50, location: "Bay 2", symbolName: "computermouse"),
-            InventoryItem(name: "Lightning Cable (1M)", quantity: 24, maxQuantity: 100, location: "Bay 3", symbolName: "cable.connector"),
-            InventoryItem(name: "USB-C Cable (1M)", quantity: 25, maxQuantity: 100, location: "Bay 3", symbolName: "cable.connector"),
-            InventoryItem(name: "USB-A Cable (1M)", quantity: 37, maxQuantity: 100, location: "Bay 3", symbolName: "cable.connector"),
-            InventoryItem(name: "Kingston 1TB SSD", quantity: 44, maxQuantity: 150, location: "Bay 7", symbolName: "externaldrive"),
-            InventoryItem(name: "Kingston 2TB SSD", quantity: 41, maxQuantity: 150, location: "Bay 7", symbolName: "externaldrive"),
-            InventoryItem(name: "Segate 1TB SSD", quantity: 66, maxQuantity: 150, location: "Bay 7", symbolName: "externaldrive"),
-            InventoryItem(name: "Segate 2TB SSD", quantity: 87, maxQuantity: 150, location: "Bay 7", symbolName: "externaldrive"),
-        ]
-        
-        // Assin our seed to populate the application
-        items = seeded
+    func refreshFromServer() async {
+        Task {
+            await loadItems()
+        }
     }
     
-    // TODO: This is temporary code to simulate database entry
+    // Add a new item via the backend API
     func addItem(name: String, quantity: Int, maxQuantity: Int, location: String) {
-        let item = InventoryItem(name: name, quantity: quantity, maxQuantity: maxQuantity, location: location, symbolName: "questionmark")
-        items.append(item)
+        let tempItem = InventoryItem(name: name, quantity: quantity, maxQuantity: maxQuantity, location: location, symbolName: "questionmark")
+        
+        items.append(tempItem)
+        
+        Task { @MainActor in
+            do {
+                let created = try await InventoryAPIClient.shared.addItem(item: tempItem)
+                
+                if let index = items.firstIndex(where: { $0.id == tempItem.id }) {
+                    items[index] = created
+                }
+            } catch {
+                // Roll back insert
+                items.removeAll { $0.id == tempItem.id }
+                errorMessage = "Failed to add item: \(error.localizedDescription)"
+            }
+        }
     }
     
-    // TODO: This is temporary code to simulate database deletion
+    // Delete an item via the backend API
     func deleteItem(_ item: InventoryItem) {
+        // Remove locally, then ask server
         items.removeAll { $0.id == item.id }
+        
+        Task { @MainActor in
+            do {
+                try await InventoryAPIClient.shared.deleteItem(id: item.id)
+            } catch {
+                // Re-insert if delete fails
+                items.append(item)
+                errorMessage = "Failed to delete item: \(error.localizedDescription)"
+            }
+        }
+    }
+    
+    // Update an item via the backend API
+    func updateItem(_ updatedItem: InventoryItem, originalItem: InventoryItem) {
+        if let index = items.firstIndex(where: { $0.id == originalItem.id }) {
+            items[index] = updatedItem
+        }
+        
+        Task { @MainActor in
+            do {
+                _ = try await InventoryAPIClient.shared.updateItem(updatedItem)
+            } catch {
+                // Revert to the original item on failure
+                if let index = items.firstIndex(where: { $0.id == updatedItem.id }) {
+                    items[index] = originalItem
+                }
+                errorMessage = "Failed to update item: \(error.localizedDescription)"
+            }
+        }
     }
 }
