@@ -28,3 +28,8 @@ xcuserdata/
 .swiftpm/
 .build/
 
+##############
+# Ignore Inventory API auth credentials
+##############
+auth.json
+
