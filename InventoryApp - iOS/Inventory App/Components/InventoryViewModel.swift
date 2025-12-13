@@ -7,15 +7,18 @@
 
 import Foundation
 import SwiftUI
-internal import Combine
+import Combine
 
 @MainActor
 class InventoryViewModel: ObservableObject {
     @Published var items: [InventoryItem] = []
     @Published var isLoading: Bool = false
     @Published var errorMessage: String?
+    private let notificationSettings: NotificationSettingsViewModel?
     
-    init() {}
+    init(notificationSettings: NotificationSettingsViewModel? = nil) {
+        self.notificationSettings = notificationSettings
+    }
     
     func loadItems() async {
         await MainActor.run {
@@ -28,6 +31,9 @@ class InventoryViewModel: ObservableObject {
             await MainActor.run {
                 self.items = loaded
                 self.isLoading = false
+
+                // Generate low-stock notifications based on threshold crossings during refresh
+                self.notificationSettings?.handleInventoryRefresh(items: loaded)
             }
         } catch {
             await MainActor.run {
@@ -89,6 +95,11 @@ class InventoryViewModel: ObservableObject {
         Task { @MainActor in
             do {
                 _ = try await InventoryAPIClient.shared.updateItem(updatedItem)
+
+                // After a successful update, evaluate threshold crossings on this device.
+                // This ensures Client A can get the notification immediately after editing,
+                // rather than waiting for a manual refresh.
+                self.notificationSettings?.handleInventoryRefresh(items: self.items)
             } catch {
                 // Revert to the original item on failure
                 if let index = items.firstIndex(where: { $0.id == updatedItem.id }) {

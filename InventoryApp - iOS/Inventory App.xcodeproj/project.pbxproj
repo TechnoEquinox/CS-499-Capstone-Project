@@ -10,22 +10,9 @@
 		8614FFFC2EC7EE4C006F195E /* Inventory App.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = "Inventory App.app"; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
-/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
-		86C81F5D2EE24709002723E4 /* Exceptions for "Inventory App" folder in "Inventory App" target */ = {
-			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
-			membershipExceptions = (
-				"Inventory-App-Info.plist",
-			);
-			target = 8614FFFB2EC7EE4C006F195E /* Inventory App */;
-		};
-/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
-
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		8614FFFE2EC7EE4C006F195E /* Inventory App */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
-			exceptions = (
-				86C81F5D2EE24709002723E4 /* Exceptions for "Inventory App" folder in "Inventory App" target */,
-			);
 			path = "Inventory App";
 			sourceTree = "<group>";
 		};

@@ -7,7 +7,7 @@
 
 import UserNotifications
 import UIKit
-internal import Combine
+import Combine
 
 // Manages system notification permission status, the app toggle,
 // and a persistent list of notifications
@@ -19,14 +19,69 @@ final class NotificationSettingsViewModel: ObservableObject {
     // UserDefaults keys
     private let enabledKey = "InventoryApp.notificationsEnabled"
     private let notificationKey = "InventoryApp.notifications"
+    // Tracks the last known percent remaining for each item so we can detect threshold crossings
+    private let lastKnownPercentKey = "InventoryApp.lastKnownPercentByItemId"
+    private let lowStockThresholdPercent: Int = 20
+
+    // itemId (uuid string) -> last known percent remaining
+    private var lastKnownPercentByItemId: [String: Int] = [:]
     
     init() {
         loadSettings()
         loadNotifications()
+        loadLastKnownPercents()
         refreshAuthorizationStatus()
     }
     
     // MARK: - Public API
+
+    /// Call this after the app refreshes inventory items from the server.
+    /// This allows *any* client (not only the one that made the change) to generate a low-stock notification
+    /// when an item crosses the threshold.
+    ///
+    /// Behavior: we only notify on a transition from > threshold to <= threshold to avoid repeated alerts.
+    /// On the first ever refresh (no cache yet), we just seed the cache and do not spam notifications.
+    func handleInventoryRefresh(items: [InventoryItem]) {
+        // Seed on first run to avoid a burst of notifications when the app first loads.
+        if lastKnownPercentByItemId.isEmpty {
+            var seeded: [String: Int] = [:]
+            for item in items {
+                let percent = percentRemaining(quantity: item.quantity, maxQuantity: item.maxQuantity)
+                seeded[item.id.uuidString] = percent
+            }
+            lastKnownPercentByItemId = seeded
+            saveLastKnownPercents()
+            return
+        }
+
+        var updated = lastKnownPercentByItemId
+
+        for item in items {
+            let itemId = item.id.uuidString
+            let newPercent = percentRemaining(quantity: item.quantity, maxQuantity: item.maxQuantity)
+            let oldPercent = updated[itemId] ?? 101 // treat unknown as "above threshold"
+
+            // Notify only when we cross the threshold downward
+            if oldPercent > lowStockThresholdPercent && newPercent <= lowStockThresholdPercent {
+                sendLowStockNotification(
+                    itemName: item.name,
+                    itemLocation: item.location,
+                    percentRemaining: newPercent
+                )
+            }
+
+            updated[itemId] = newPercent
+        }
+
+        // Remove cache entries for items that no longer exist
+        let currentIds = Set(items.map { $0.id.uuidString })
+        updated.keys
+            .filter { !currentIds.contains($0) }
+            .forEach { updated.removeValue(forKey: $0) }
+
+        lastKnownPercentByItemId = updated
+        saveLastKnownPercents()
+    }
     
     // Called when the user toggles the "Enabled Notifications" switch
     func handleToggleChange(_ isOn: Bool) {
@@ -75,7 +130,7 @@ final class NotificationSettingsViewModel: ObservableObject {
     // Function to call when an item drops below the threshold to notify the user
     func sendLowStockNotification(itemName: String, itemLocation: String, percentRemaining: Int) {
         // Guard the app level toggle and the system authorization, must allow both
-        guard isNotificationsEnabled, authorizationStatus == .authorized || authorizationStatus == .provisional else {
+        guard isNotificationsEnabled && (authorizationStatus == .authorized || authorizationStatus == .provisional) else {
             return
         }
         
@@ -109,6 +164,35 @@ final class NotificationSettingsViewModel: ObservableObject {
         DispatchQueue.main.async {
             self.notifications.insert(newNotification, at: 0)
             self.saveNotifications()
+        }
+    }
+    
+    // MARK: - Inventory Threshold Helpers
+
+    private func percentRemaining(quantity: Int, maxQuantity: Int) -> Int {
+        guard maxQuantity > 0 else { return 0 }
+        let pct = (Double(quantity) / Double(maxQuantity)) * 100.0
+        return max(0, min(100, Int(pct.rounded())))
+    }
+
+    private func loadLastKnownPercents() {
+        let defaults = UserDefaults.standard
+        guard let data = defaults.data(forKey: lastKnownPercentKey) else {
+            lastKnownPercentByItemId = [:]
+            return
+        }
+
+        if let decoded = try? JSONDecoder().decode([String: Int].self, from: data) {
+            lastKnownPercentByItemId = decoded
+        } else {
+            lastKnownPercentByItemId = [:]
+        }
+    }
+
+    private func saveLastKnownPercents() {
+        let defaults = UserDefaults.standard
+        if let data = try? JSONEncoder().encode(lastKnownPercentByItemId) {
+            defaults.set(data, forKey: lastKnownPercentKey)
         }
     }
     

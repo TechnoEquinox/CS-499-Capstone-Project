@@ -1,0 +1,66 @@
+Database changed
+MariaDB [inventory_db]> show TABLES;
++------------------------+
+| Tables_in_inventory_db |
++------------------------+
+| inventory_item_audit   |
+| inventory_items        |
+| user_types             |
+| users                  |
++------------------------+
+4 rows in set (0.002 sec)
+
+MariaDB [inventory_db]> DESCRIBE inventory_item_audit;
++-------------------+---------------------+------+-----+---------------------+----------------+
+| Field             | Type                | Null | Key | Default             | Extra          |
++-------------------+---------------------+------+-----+---------------------+----------------+
+| id                | bigint(20) unsigned | NO   | PRI | NULL                | auto_increment |
+| inventory_item_id | int(10) unsigned    | NO   | MUL | NULL                |                |
+| user_id           | int(10) unsigned    | NO   | MUL | NULL                |                |
+| user_type_id      | tinyint(3) unsigned | NO   | MUL | NULL                |                |
+| change_amount     | int(11)             | NO   |     | NULL                |                |
+| old_quantity      | int(11)             | NO   |     | NULL                |                |
+| new_quantity      | int(11)             | NO   |     | NULL                |                |
+| occurred_at       | datetime            | NO   | MUL | current_timestamp() |                |
+| note              | varchar(255)        | YES  |     | NULL                |                |
++-------------------+---------------------+------+-----+---------------------+----------------+
+9 rows in set (0.006 sec)
+
+MariaDB [inventory_db]> DESCRIBE inventory_items;
++--------------+------------------+------+-----+---------------------+-------------------------------+
+| Field        | Type             | Null | Key | Default             | Extra                         |
++--------------+------------------+------+-----+---------------------+-------------------------------+
+| id           | int(10) unsigned | NO   | PRI | NULL                | auto_increment                |
+| uuid         | char(36)         | NO   | UNI | NULL                |                               |
+| name         | varchar(100)     | NO   |     | NULL                |                               |
+| quantity     | int(11)          | NO   |     | NULL                |                               |
+| max_quantity | int(11)          | NO   |     | NULL                |                               |
+| location     | varchar(100)     | NO   |     | NULL                |                               |
+| symbol_name  | varchar(100)     | NO   |     | shippingbox         |                               |
+| created_at   | datetime         | NO   |     | current_timestamp() |                               |
+| updated_at   | datetime         | NO   |     | current_timestamp() | on update current_timestamp() |
++--------------+------------------+------+-----+---------------------+-------------------------------+
+9 rows in set (0.001 sec)
+
+MariaDB [inventory_db]> DESCRIBE user_types;
++-------------+---------------------+------+-----+---------+-------+
+| Field       | Type                | Null | Key | Default | Extra |
++-------------+---------------------+------+-----+---------+-------+
+| id          | tinyint(3) unsigned | NO   | PRI | NULL    |       |
+| name        | varchar(50)         | NO   | UNI | NULL    |       |
+| description | varchar(255)        | YES  |     | NULL    |       |
++-------------+---------------------+------+-----+---------+-------+
+3 rows in set (0.001 sec)
+
+MariaDB [inventory_db]> DESCRIBE users;
++---------------+---------------------+------+-----+---------------------+----------------+
+| Field         | Type                | Null | Key | Default             | Extra          |
++---------------+---------------------+------+-----+---------------------+----------------+
+| id            | int(10) unsigned    | NO   | PRI | NULL                | auto_increment |
+| username      | varchar(50)         | NO   | UNI | NULL                |                |
+| password_hash | varchar(255)        | NO   |     | NULL                |                |
+| user_type_id  | tinyint(3) unsigned | NO   | MUL | NULL                |                |
+| last_login_at | datetime            | YES  |     | NULL                |                |
+| created_at    | datetime            | NO   |     | current_timestamp() |                |
++---------------+---------------------+------+-----+---------------------+----------------+
+6 rows in set (0.001 sec)

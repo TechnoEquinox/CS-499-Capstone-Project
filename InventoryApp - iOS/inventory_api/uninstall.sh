@@ -5,6 +5,8 @@ set -e
 PROJECT_DIR="$(cd "$(dirname "$0")" && pwd)"
 VENV_DIR="$PROJECT_DIR/venv"
 REQ_FILE="$PROJECT_DIR/requirements.txt"
+AUTH_DIR="$PROJECT_DIR/auth"
+AUTH_FILE="$AUTH_DIR/auth.json"
 
 # Protect the root directory from accidental deletion
 if [[ "$PROJECT_DIR" == "/" ]]; then
@@ -34,6 +36,15 @@ else
     echo "[=] No requirements.txt found. Skipping."
 fi
 
+# Remove the auth.json file
+if [ -f "$AUTH_FILE" ]; then
+    echo "[+] Removing auth.json"
+    rm -f "$AUTH_FILE"
+else
+    echo "[=] No auth.json found. Skipping."
+fi
+
 echo "======================================="
 echo " Uninstall complete!"
+echo " You can now remove the project directory to complete the uninstallation."
 echo "======================================="

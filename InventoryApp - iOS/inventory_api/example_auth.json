@@ -1,0 +1,7 @@
+{
+    "host": "[DB HOSTNAME GOES HERE]",
+    "user": "[USERNAME GOES HERE]",
+    "password": "[PASSWORD GOES HERE]",
+    "database": "[NAME OF DB GOES HERE]",
+    "jwt_secret_key": "72d839280208ec4c81d5b4f25572c5941fabf99c2d9d7f0becf25f047f8b988384c33a516d484f1b8d3b87f621eadf2ffc40c1c33726cb5722374432ea726a66"
+}

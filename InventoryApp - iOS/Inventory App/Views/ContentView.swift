@@ -13,28 +13,52 @@ struct ContentView: View {
     @State private var loginSuccess: Bool = false
     @State private var isCheckingServer: Bool = false
     @State private var connectionErrorMessage: String? = nil
+    @State private var isShowingCreateAccount: Bool = false
     
-    // Make a GET request to the /ping end-point to check for connectivity
-    private func testConnectionAndNavigate() {
+    // Log in via /auth/login (store the JWT in Keychain via InventoryAPIClient)
+    private func loginAndNavigate() {
         // Reset state and show loading
         isCheckingServer = true
         connectionErrorMessage = nil
         
+        let trimmedUser = username.trimmingCharacters(in: .whitespacesAndNewlines)
+        let trimmedPass = password.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        guard !trimmedUser.isEmpty else {
+            connectionErrorMessage = "Please enter a username."
+            isCheckingServer = false
+            return
+        }
+        
+        guard !trimmedPass.isEmpty else {
+            connectionErrorMessage = "Please enter a password."
+            isCheckingServer = false
+            return
+        }
+        
         Task {
             do {
+                // Quick connectivity check
                 let ok = try await InventoryAPIClient.shared.ping()
-                await MainActor.run {
-                    isCheckingServer = false
-                    if ok {
-                        loginSuccess = true
-                    } else {
+                guard ok else {
+                    await MainActor.run {
+                        isCheckingServer = false
                         connectionErrorMessage = "Unable to verify the server connection. Please try again."
                     }
+                    return
+                }
+
+                // Ping succeeded — now attempt login
+                try await InventoryAPIClient.shared.login(username: trimmedUser, password: trimmedPass)
+
+                await MainActor.run {
+                    isCheckingServer = false
+                    loginSuccess = true
                 }
             } catch {
                 await MainActor.run {
                     isCheckingServer = false
-                    connectionErrorMessage = "Unable to reach server: \(error.localizedDescription)"
+                    connectionErrorMessage = "Login failed: \(error.localizedDescription)"
                 }
             }
         }
@@ -90,7 +114,8 @@ struct ContentView: View {
                         // Button row
                         HStack {
                             Button("Create Account") {
-                                testConnectionAndNavigate()
+                                connectionErrorMessage = nil
+                                isShowingCreateAccount = true
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
@@ -98,7 +123,7 @@ struct ContentView: View {
                             .disabled(isCheckingServer)
                             
                             Button("Log In") {
-                                testConnectionAndNavigate()
+                                loginAndNavigate()
                             }
                             .frame(maxWidth: .infinity)
                             .padding(.vertical, 10)
@@ -107,7 +132,7 @@ struct ContentView: View {
                         }
                         
                         if isCheckingServer {
-                            ProgressView("Checking server connection...")
+                            ProgressView("Signing in...")
                                 .font(.footnote)
                         }
                         
@@ -130,6 +155,14 @@ struct ContentView: View {
                     Spacer()
                 }
                 .padding()
+            }
+            .sheet(isPresented: $isShowingCreateAccount) {
+                CreateAccountView { newUsername in
+                    // Pre-fill username and prompt the user to log in
+                    username = newUsername
+                    password = ""
+                    connectionErrorMessage = "Account created. Please log in with your new credentials."
+                }
             }
             // Navigate to Inventory screen
             .navigationDestination(isPresented: $loginSuccess) {
