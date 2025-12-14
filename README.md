@@ -150,7 +150,7 @@ Clone the repository to the home directory of your system. The Inventory API is 
 cd CS-499-Capstone-Project/InventoryApp - iOS
 cp -r inventory_api/ ~/
 cd ~/inventory_api
-./install.sh
+sudo ./install.sh
 ```
 
 This will create the project structure and automatically download the required dependencies via pip. Near the end of the installation, you will be prompted for the database auth information. You can edit this data at any time by navigating to */inventory_api/auth/auth.json*
@@ -172,7 +172,7 @@ To uninstall the inventory_api, perform the following:
 
 ```
 cd inventory_api/
-./uninstall.sh
+sudo ./uninstall.sh
 ```
 Once the uninstall has completed, you can then remove the project folder from your system using:
 
