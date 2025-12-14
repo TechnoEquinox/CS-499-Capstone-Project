@@ -8,7 +8,20 @@ In this project, I plan to take existing code developed previously in my CS-360:
 2. Algorithms and Data Structures
 3. Databases
 
-### MariaDB Setup
+## Table of Contents
+- ePortfolio
+    - [Professional Self-Assessment]()
+    - [Android Application Code Review]()
+    - [Narritives]()
+- Setup
+    - [MariaDB Setup](#mariadb-setup)
+    - [Database and JWT Auth](#database-and-jwt-auth)
+    - [Installing Inventory API](#install-inventory_api)
+    - [Running Inventory API](#running-inventory_api)
+- Uninstall
+    - [Uninstalling Inventory API](#uninstall-inventory_api)  
+
+## MariaDB Setup
 This project assumes you have already installed MariaDB, and have configured it with a hostname, user, password, and a database name. Leave the database empty and do not add or configure any tables. 
 
 For more information on installing MariaDB, refer to the [documentation found here](https://mariadb.com/docs/server/server-management/install-and-upgrade-mariadb/installing-mariadb/compiling-mariadb-from-source/building-mariadb-on-ubuntu).
@@ -26,18 +39,6 @@ This data is saved in the auth.json file not published here. This file is create
 }
 ```
 This data is used by the application to make the connection to the existing SQL database. *install.sh* will generate the jwt_secret_key automatically before installation has completed. You can verify and change this information at any time by navigating to */inventory_api/auth/auth.json*.
-
-## Install
-Clone the repository to the home directory of your system. The Inventory API is found under *CS-499-Capstone-Project/InventoryApp - iOS/inventory_api/*. Then, follow these instructions to move the API to your home directory.
-
-```
-cd CS-499-Capstone-Project/InventoryApp - iOS
-cp -r inventory_api/ ~/
-cd ~/inventory_api
-./install.sh
-```
-
-This will create the project structure and automatically download the required dependencies via pip. Near the end of the installation, you will be prompted for the database auth information. You can edit this data at any time by navigating to */inventory_api/auth/auth.json*
 
 During installation, the script uses the auth information provided to test the connection to MariaDB and if successful, creates the following tables in the database using *install.py*:
 
@@ -99,6 +100,18 @@ This table is seeded with 3 user types that are required for the application.
 +---------------+---------------------+------+-----+---------------------+----------------+
 ```
 
+## Install inventory_api
+Clone the repository to the home directory of your system. The Inventory API is found under *CS-499-Capstone-Project/InventoryApp - iOS/inventory_api/*. Then, follow these instructions to move the API to your home directory.
+
+```
+cd CS-499-Capstone-Project/InventoryApp - iOS
+cp -r inventory_api/ ~/
+cd ~/inventory_api
+./install.sh
+```
+
+This will create the project structure and automatically download the required dependencies via pip. Near the end of the installation, you will be prompted for the database auth information. You can edit this data at any time by navigating to */inventory_api/auth/auth.json*
+
 If you are not interested in the client code, then you can remove the *CS-499-Capstone-Project/* from your device at this point:
 ```
 rm -r CS-499-Capstone-Project/
@@ -111,11 +124,10 @@ To run the API, make sure you follow the installation steps. If *install.sh* com
 sudo systemctl status inventory_api.service
 ```
 
-## Uninstall
+## Uninstall inventory_api
 To uninstall the inventory_api, perform the following:
 
 ```
-deactivate
 cd inventory_api/
 ./uninstall.sh
 ```
