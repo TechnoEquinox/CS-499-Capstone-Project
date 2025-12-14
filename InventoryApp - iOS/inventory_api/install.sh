@@ -101,7 +101,7 @@ if ! command -v mariadb >/dev/null 2>&1 && ! command -v mysql >/dev/null 2>&1; t
 fi
 
 echo "[+] Setting up the MariaDB schema using auth.json..."
-#"$VENV_DIR/bin/python3" "$PROJECT_DIR/install.py"
+"$VENV_DIR/bin/python3" "$PROJECT_DIR/install.py"
 
 echo "[+] Installing systemd service ($SERVICE_NAME)..."
 cat <<EOF > "$SERVICE_PATH"
