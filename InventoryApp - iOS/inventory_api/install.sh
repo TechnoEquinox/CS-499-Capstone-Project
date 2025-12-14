@@ -8,7 +8,18 @@ REQUIREMENTS_FILE="$PROJECT_DIR/requirements.txt"
 AUTH_DIR="$PROJECT_DIR/auth"
 AUTH_FILE="$AUTH_DIR/auth.json"
 
+SERVICE_NAME="inventory_api.service"
+SERVICE_PATH="/etc/systemd/system/$SERVICE_NAME"
+SERVICE_USER="$SUDO_USER"
+SERVICE_GROUP="$SUDO_USER"
+
 echo "=== Inventory API Installer ==="
+
+# Check if we are running this script with sudo privilages
+if [ -z "$SERVICE_USER" ]; then
+    echo "ERROR: This script must be run with sudo (not as root directly)."
+    exit 1
+fi
 
 # Check for and create the venv
 if [ ! -d "$VENV_DIR" ]; then
@@ -82,7 +93,60 @@ else
     echo "[=] auth.json already exists. Skipping creation."
 fi
 
+echo "[+] Checking MariaDB client..."
+if ! command -v mariadb >/dev/null 2>&1 && ! command -v mysql >/dev/null 2>&1; then
+    echo "[!] MariaDB/MySQL client not found. Perform the following and rerun:"
+    echo "    sudo apt-get update && sudo apt-get install -y mariadb-client.  "
+    exit 1
+fi
+
+echo "[+] Setting up the MariaDB schema using auth.json..."
+#"$VENV_DIR/bin/python3" "$PROJECT_DIR/install.py"
+
+echo "[+] Installing systemd service ($SERVICE_NAME)..."
+cat <<EOF > "$SERVICE_PATH"
+[Unit]
+Description=Inventory API (Flask), created by Connor Bailey for CS-499 Capstone Project.
+After=network.target
+
+[Service]
+Type=simple
+
+# Run as invoking user
+User=$SERVICE_USER
+Group=$SERVICE_GROUP
+
+# Project directory
+WorkingDirectory=$PROJECT_DIR
+
+# Virtual environment Python
+ExecStart=$PROJECT_DIR/venv/bin/python3 $PROJECT_DIR/app.py
+
+# Restart on failure
+Restart=always
+RestartSec=5
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
+EOF
+
+echo "[+] Reloading systemd..."
+systemctl daemon-reload
+
+echo "[+] Enabling service on boot..."
+systemctl enable "$SERVICE_NAME"
+
+echo "[+] Restarting service now..."
+systemctl restart "$SERVICE_NAME"
+
+echo "[+] Service status:"
+systemctl --no-pager status "$SERVICE_NAME"
+
 echo "======================================="
 echo " Installation complete!"
-echo " To run the server: source venv/bin/activate && python app.py"
+echo " The service should now be running on port 5000."
 echo "======================================="
