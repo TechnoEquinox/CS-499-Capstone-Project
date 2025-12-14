@@ -11,11 +11,7 @@ struct InventoryItemDetailView: View {
     let item: InventoryItem
     var onSave: ((InventoryItem) -> Void)?
     
-    @EnvironmentObject var notificationSettings: NotificationSettingsViewModel
     @EnvironmentObject var viewModel: InventoryViewModel
-    
-    // Hard coded threshold for Low Stock notifications
-    private let lowStockThreshold: Double = 0.2
     
     @State private var isEditing: Bool = false
     @State private var editedName: String
@@ -43,16 +39,6 @@ struct InventoryItemDetailView: View {
         // Normalize the text fields
         editedQuantity = String(newQuantity)
         editedMaxQuantity = String(newMaxQuantity)
-        
-        // Calculate the old and new percent remaining
-        // Protect against divide by zero
-        let oldPercentRemaining = Double(item.quantity) / Double(max(item.maxQuantity, 1))
-        let newPercentRemaining = Double(newQuantity) / Double(max(newMaxQuantity, 1))
-        
-        if oldPercentRemaining >= lowStockThreshold, newPercentRemaining < lowStockThreshold {
-            let percentRemainingInt = Int(newPercentRemaining * 100)
-            notificationSettings.sendLowStockNotification(itemName: editedName, itemLocation: editedLocation, percentRemaining: percentRemainingInt)
-        }
         
         // Update the item like this to preserve the UUID
         var updatedItem = item
@@ -179,7 +165,6 @@ struct InventoryItemDetailView: View {
         InventoryItemDetailView(
             item: InventoryItem(name: "Boxes", quantity: 17, maxQuantity: 30, location: "Bay 4")
         )
-        .environmentObject(NotificationSettingsViewModel())
         .environmentObject(InventoryViewModel())
     }
 }

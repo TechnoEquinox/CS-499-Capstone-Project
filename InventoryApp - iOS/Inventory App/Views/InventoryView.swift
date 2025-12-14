@@ -8,7 +8,7 @@
 import SwiftUI
 
 struct InventoryView: View {
-    @StateObject private var viewModel = InventoryViewModel()
+    @EnvironmentObject private var viewModel: InventoryViewModel
     @EnvironmentObject private var notificationViewModel: NotificationSettingsViewModel
     
     @State private var showingAddItem = false
@@ -125,7 +125,6 @@ struct InventoryView: View {
                                 } else {
                                     NavigationLink {
                                         InventoryItemDetailView(item: item)
-                                            .environmentObject(viewModel)
                                     } label: {
                                         InventoryItemCardView(item: item)
                                     }
@@ -246,7 +245,6 @@ struct InventoryView: View {
             // Present the AddItemView as a sheet
             .sheet(isPresented: $showingAddItem) {
                 AddItemView()
-                    .environmentObject(viewModel)
             }
             // Present an alert to the user before deleting
             .alert("Delete selected items?", isPresented: $showingBatchDeleteAlert) {
@@ -262,6 +260,10 @@ struct InventoryView: View {
 }
 
 #Preview {
-    InventoryView()
-        .environmentObject(NotificationSettingsViewModel())
+    let ns = NotificationSettingsViewModel()
+    let ivm = InventoryViewModel(notificationSettings: ns)
+
+    return InventoryView()
+        .environmentObject(ns)
+        .environmentObject(ivm)
 }

@@ -31,12 +31,20 @@ class AppDelegate: NSObject, UIApplicationDelegate, UNUserNotificationCenterDele
 @main
 struct Inventory_AppApp: App {
     @UIApplicationDelegateAdaptor(AppDelegate.self) var appDelegate
-    @StateObject private var notificationSettings = NotificationSettingsViewModel()
+    @StateObject private var notificationSettings: NotificationSettingsViewModel
+    @StateObject private var inventoryViewModel: InventoryViewModel
+
+    init() {
+        let ns = NotificationSettingsViewModel()
+        _notificationSettings = StateObject(wrappedValue: ns)
+        _inventoryViewModel = StateObject(wrappedValue: InventoryViewModel(notificationSettings: ns))
+    }
     
     var body: some Scene {
         WindowGroup {
             ContentView()
                 .environmentObject(notificationSettings)
+                .environmentObject(inventoryViewModel)
         }
     }
 }

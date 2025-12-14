@@ -1,0 +1,27 @@
+[Unit]
+Description=Inventory API (Flask) for CS-499 Capstone
+After=network.target
+
+[Service]
+Type=simple
+
+# Run as normal user
+User=connorbailey
+Group=connorbailey
+
+# Project directory
+WorkingDirectory=/home/connorbailey/inventory_api
+
+# Virtual environment Python
+ExecStart=/home/connorbailey/inventory_api/venv/bin/python3 /home/connorbailey/inventory_api/app.py
+
+# Restart on failure
+Restart=always
+RestartSec=5
+
+# Logging
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

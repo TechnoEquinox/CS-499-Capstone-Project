@@ -1,40 +1,25 @@
-from flask import Flask, jsonify, request
+from flask import Flask, jsonify, request, abort
+from flask_jwt_extended import JWTManager, jwt_required, get_jwt_identity, get_jwt
+from pathlib import Path
+from auth import auth_bp
+from db import get_db_connection, JWT_SECRET_KEY
+
 import json
 import pymysql
-from pathlib import Path
 import sys
 import uuid
 
 app = Flask(__name__)
 
-AUTH_PATH = "auth/auth.json"
+# Get our secret key from the helper
+app.config["JWT_SECRET_KEY"] = JWT_SECRET_KEY
+jwt = JWTManager(app)
 
-# Load all of the authentication variables from auth.json
-try:
-    with open(AUTH_PATH, "r") as f:
-        auth = json.load(f)
-except FileNotFoundError:
-    print(f"ERROR: auth.json not found at {AUTH_PATH}")
-    sys.exit(1)
-except json.JSONDecodeError as e:
-    print(f"ERROR: Failed to parse auth.json: {e}")
-    sys.exit(1)
-
-DB_CONFIG = {
-    "host": auth.get("host", "localhost"),
-    "user": auth["user"],
-    "password": auth["password"],
-    "database": auth["database"],
-    "cursorclass": pymysql.cursors.DictCursor,
-    "charset": "utf8mb4"
-}
-
-def get_db_connection():
-    # TODO: Add error handling
-    return pymysql.connect(**DB_CONFIG)
-
+# Register the auth routes (/auth/register, /auth/login, /auth/me)
+app.register_blueprint(auth_bp)
 
 @app.route("/get-all-items", methods=["GET"])
+@jwt_required()
 def get_items():
     # Return all inventory items in a JSON format that matches our Swift struct
     conn = get_db_connection()
@@ -74,6 +59,7 @@ def get_items():
         conn.close()
 
 @app.route("/add-item", methods=["POST"])
+@jwt_required()
 def add_item():
     # Place newly created inventory item into the database
     data = request.get_json(silent=True)
@@ -145,6 +131,7 @@ def add_item():
     }), 201
 
 @app.route("/delete-item", methods=["POST"])
+@jwt_required()
 def delete_item():
     # Delete an inventory item by UUID
     data = request.get_json(silent=True)
@@ -194,6 +181,7 @@ def delete_item():
     }), 200
 
 @app.route("/modify-item", methods=["POST"])
+@jwt_required()
 def modify_item():
     # Modify an existing inventory item
     # Every field other than id is optional, only provided fields will be updated
@@ -297,6 +285,7 @@ def modify_item():
         }
     }), 200
 
+# NOTE: Not requiring JWT Token for /ping route
 @app.route("/ping", methods=["GET"])
 def health_check():
     return jsonify({
@@ -305,4 +294,5 @@ def health_check():
     }), 200
 
 if __name__ == "__main__":
+    # Development server (we'll later put this behind gunicorn + nginx)
     app.run(host="0.0.0.0", port=5000, debug=True)

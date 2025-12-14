@@ -6,6 +6,7 @@
 //
 
 import Foundation
+import CryptoKit
 
 struct InventoryAPIClient {
     static let shared = InventoryAPIClient()
@@ -13,6 +14,19 @@ struct InventoryAPIClient {
     // Flask server
     // TODO: Change how this is handled in production
     private let baseURL = URL(string: "http://97.107.129.189:5000")!
+    
+    private let tokenKey = "inventory_api_access_token"
+    
+    private var accessToken: String? {
+        get { Keychain.read(key: tokenKey) }
+        set {
+            if let newValue {
+                Keychain.save(key: tokenKey, value: newValue)
+            } else {
+                Keychain.delete(key: tokenKey)
+            }
+        }
+    }
     
     // MARK: - Helpers
     
@@ -24,9 +38,13 @@ struct InventoryAPIClient {
         
         var request = URLRequest(url: url)
         request.httpMethod = method
-        
-        // DEBUG: Remove this after testing
         request.cachePolicy = .reloadIgnoringLocalCacheData
+        
+        // Need to add the accessToken to the request for endpoints
+        // that are not auth or ping
+        if !path.hasPrefix("/auth/") && path != "/ping", let token = accessToken {
+            request.setValue("Bearer \(token)", forHTTPHeaderField: "Authorization")
+        }
         
         if let body {
             request.httpBody = body
@@ -56,6 +74,51 @@ struct InventoryAPIClient {
     }
     
     // MARK: - Public API
+    
+    // Log in with the username and password. Stores the JWT access token in Keychain
+    func login(username: String, password: String) async throws {
+        let clientHash = sha256Hex(password)
+        let body = AuthRequestBody(username: username, client_password_hash: clientHash)
+        let bodyData = try jsonEncoder.encode(body)
+        let request = try makeRequest(path: "/auth/login", method: "POST", body: bodyData)
+        
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validate(response, data: data)
+        
+        let decoded: AuthLoginResponse
+        do {
+            decoded = try jsonDecoder.decode(AuthLoginResponse.self, from: data)
+        } catch {
+            throw APIError.decodingFailed
+        }
+        
+        // Persist the token in the Keychain
+        _ = Keychain.save(key: tokenKey, value: decoded.access_token)
+    }
+    
+    // Create a new user account (does not auto-login)
+    func register(username: String, password: String) async throws {
+        let clientHash = sha256Hex(password)
+        let body = AuthRequestBody(username: username, client_password_hash: clientHash)
+        let bodyData = try jsonEncoder.encode(body)
+        let request = try makeRequest(path: "/auth/register", method: "POST", body: bodyData)
+
+        let (data, response) = try await URLSession.shared.data(for: request)
+        try validate(response, data: data)
+
+        // Backend returns an access_token; we intentionally do not persist it here.
+        _ = try jsonDecoder.decode(AuthLoginResponse.self, from: data)
+    }
+    
+    // Clear the saved JWT access token
+    func logout() {
+        _ = Keychain.delete(key: tokenKey)
+    }
+    
+    // Returns true if a JWT is currently stored
+    func hasToken() -> Bool {
+        return accessToken != nil
+    }
     
     // Makes a GET request to the end-point for all items in the db
     func getAllItems() async throws -> [InventoryItem] {
