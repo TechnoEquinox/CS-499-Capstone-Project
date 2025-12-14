@@ -81,6 +81,8 @@ This data is saved in the auth.json file not published here. This file is create
 ```
 This data is used by the application to make the connection to the existing SQL database. *install.sh* will generate the jwt_secret_key automatically before installation has completed. You can verify and change this information at any time by navigating to */inventory_api/auth/auth.json*.
 
+This JWT token is required for all of the end-points that provide CRUD (Create, Read, Update, Destroy) functionality to our database, ensuring only authorized users are able to make changes and view the warehouse inventory. When a new client device authenticates successfully, the login end-points return a newly generated JWT token that is valid for 15 minutes, or until the client closes the application. The client use this token to verify the CRUD request is from an authenticated user.
+
 During installation, the script uses the auth information provided to test the connection to MariaDB and if successful, creates the following tables in the database using *install.py*:
 
 ```
