@@ -11,11 +11,11 @@ In this project, I plan to take existing code developed previously in my CS-360:
 ## MariaDB Structure
 For information on the database structure and schema, please see *inventory_db description.txt*.
 
-### Setting up MariaDB
-Coming Soon!
+### Requirements: MariaDB
+This project assumes you have already installed MariaDB, and have configured it with a hostname, user, password, and a database name. Leave the database empty and do not add or configure any tables. 
 
 ## Database and JWT Auth
-For the database authentication and for the JWT token, this data is saved in the auth.json file not published here. This file is created when running the install.sh file. This JSON contains the following structure:
+This data is saved in the auth.json file not published here. This file is created when running the install.sh file. This JSON contains the following structure:
 
 ```
 {
@@ -38,6 +38,13 @@ cd inventory_api/
 
 This will create the project structure and automatically download the required dependencies via pip. Near the end of the installation, you will be prompted for the database auth information. You can edit this data at any time by navigating to */inventory_api/auth/auth.json*
 
+## Running inventory_api
+To run the API, make sure you follow the installation steps. If *install.sh* completes successfully, then the Flask API should be running on port 5000. You can verify this with:
+
+```
+sudo systemctl status inventory_api.service
+```
+
 ## Uninstall
 To uninstall the inventory_api, perform the following:
 
@@ -51,16 +58,8 @@ Once the uninstall has completed, you can then remove the project folder from yo
 ```
 rm -r inventory_api/
 ```
+Please note, this uninstall script does not remove or destroy any of the database data, as this is incredibly destructive. If you do not want this database on your system anymore, please refer to the MariaDB documentation to drop the data.
 
-## Running inventory_api
-To run the API, make sure you follow the installation steps, then perform the following:
-
-```
-source /venv/bin/activate
-python3 app.py
-```
-
-TODO: This will be made a systemctl service before final submission. *install.sh* should create the systemctl service and start it. Instructions will be updated to follow.
 
 
 
